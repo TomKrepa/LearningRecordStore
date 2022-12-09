@@ -1,0 +1,62 @@
+version: '3.7'
+services:
+  mariadb:
+    # docker exec some-mariadb sh -c 'exec mariadb-dump --all-databases -uroot -p"$MARIADB_ROOT_PASSWORD"' > /some/path/on/your/host/all-databases.sql
+    # docker exec -i some-mariadb sh -c 'exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD"' < /some/path/on/your/host/all-databases.sql
+    # Healthcheck
+    image: mariadb
+    restart: always
+    environment:
+      #MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb-root
+      MARIADB_ROOT_PASSWORD: example
+      MARIADB_USER: moodle_user
+      MARIADB_PASSWORD: example
+      MARIADB_DATABASE: moodle_db
+      MARIADB_CHARACTER_SET: utf8mb4
+      MARIADB_COLLATE: utf8mb4_unicode_ci
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+        - moodle_network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8090:8080
+    networks:
+      - moodle_network
+
+  moodle:
+    restart: always
+    image: bitnami/moodle:latest
+    ports:
+      - 80:8080
+      - 443:8443
+    environment:
+      - MOODLE_DATABASE_HOST=mariadb
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=moodle_user
+      - MOODLE_DATABASE_NAME=moodle_db
+      - MOODLE_DATABASE_PASSWORD=example
+      - MOODLE_USERNAME=admin
+      - MOODLE_PASSWORD=pwd
+      # - MOODLE_EMAIL=
+      # - MOODLE_SITE_NAME=
+    volumes:
+      - 'moodle_data:/bitnami/moodle'
+      - 'moodledata_data:/bitnami/moodledata'
+    depends_on:
+      - mariadb
+    networks:
+      - moodle_network
+volumes:
+  mariadb_data:
+    driver: local
+  moodle_data:
+    driver: local
+  moodledata_data:
+    driver: local
+
+networks:
+  moodle_network:
